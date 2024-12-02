@@ -1,63 +1,63 @@
-import torch.utils.data
-import scipy.io as sio
-import torchvision.transforms as transforms
+import torch.utils.data  # 导入 PyTorch 数据工具模块
+import scipy.io as sio  # 导入 SciPy 的 IO 模块并命名为 sio
+import torchvision.transforms as transforms  # 导入 torchvision 的变换模块
 
-
+# 定义训练数据集类，继承自 PyTorch 的 Dataset 类
 class TrainData(torch.utils.data.Dataset):
     def __init__(self, img, target, transform=None, target_transform=None):
-        self.img = img.float()
-        self.target = target.float()
-        self.transform = transform
-        self.target_transform = target_transform
+        self.img = img.float()  # 将图像数据转换为浮点型
+        self.target = target.float()  # 将目标数据转换为浮点型
+        self.transform = transform  # 图像变换
+        self.target_transform = target_transform  # 目标变换
 
     def __getitem__(self, index):
-        img, target = self.img[index], self.target[index]
+        img, target = self.img[index], self.target[index]  # 获取指定索引的图像和目标
         if self.transform:
-            img = self.transform(img)
+            img = self.transform(img)  # 如果有图像变换，则应用变换
         if self.target_transform:
-            target = self.target_transform(target)
+            target = self.target_transform(target)  # 如果有目标变换，则应用变换
 
-        return img, target
+        return img, target  # 返回图像和目标
 
     def __len__(self):
-        return len(self.img)
+        return len(self.img)  # 返回数据集的长度
 
-
+# 定义数据类
 class Data:
     def __init__(self, dataset, device):
         super(Data, self).__init__()
 
-        data_path = "./data/" + dataset + "_dataset.mat"
+        data_path = "./data/" + dataset + "_dataset.mat"  # 构建数据路径
         if dataset == 'samson':
-            self.P, self.L, self.col = 3, 156, 95
+            self.P, self.L, self.col = 3, 156, 95  # 设置 samson 数据集的参数
         elif dataset == 'jasper':
-            self.P, self.L, self.col = 4, 198, 100
+            self.P, self.L, self.col = 4, 198, 100  # 设置 jasper 数据集的参数
         elif dataset == 'urban':
-            self.P, self.L, self.col = 4, 162, 306
+            self.P, self.L, self.col = 4, 162, 306  # 设置 urban 数据集的参数
         elif dataset == 'apex':
-            self.P, self.L, self.col = 4, 258, 110
+            self.P, self.L, self.col = 4, 258, 110  # 设置 apex 数据集的参数
         elif dataset == 'dc':
-            self.P, self.L, self.col = 6, 191, 290
+            self.P, self.L, self.col = 6, 191, 290  # 设置 dc 数据集的参数
 
-        data = sio.loadmat(data_path)
-        self.Y = torch.from_numpy(data['Y'].T).to(device)
-        self.A = torch.from_numpy(data['A'].T).to(device)
-        self.M = torch.from_numpy(data['M'])
-        self.M1 = torch.from_numpy(data['M1'])
+        data = sio.loadmat(data_path)  # 加载 .mat 文件数据
+        self.Y = torch.from_numpy(data['Y'].T).to(device)  # 将 Y 数据转换为 PyTorch 张量并转置
+        self.A = torch.from_numpy(data['A'].T).to(device)  # 将 A 数据转换为 PyTorch 张量并转置
+        self.M = torch.from_numpy(data['M'])  # 将 M 数据转换为 PyTorch 张量
+        self.M1 = torch.from_numpy(data['M1'])  # 将 M1 数据转换为 PyTorch 张量
 
     def get(self, typ):
         if typ == "hs_img":
-            return self.Y.float()
+            return self.Y.float()  # 返回高光谱图像数据
         elif typ == "abd_map":
-            return self.A.float()
+            return self.A.float()  # 返回丰度图数据
         elif typ == "end_mem":
-            return self.M
+            return self.M  # 返回端元数据
         elif typ == "init_weight":
-            return self.M1
+            return self.M1  # 返回初始权重数据
 
     def get_loader(self, batch_size=1):
-        train_dataset = TrainData(img=self.Y, target=self.A, transform=transforms.Compose([]))
+        train_dataset = TrainData(img=self.Y, target=self.A, transform=transforms.Compose([]))  # 创建训练数据集
         train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                    batch_size=batch_size,
-                                                   shuffle=False)
-        return train_loader
+                                                   shuffle=False)  # 创建数据加载器
+        return train_loader  # 返回数据加载器
