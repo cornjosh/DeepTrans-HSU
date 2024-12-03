@@ -14,5 +14,5 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print("\nSelected device:", device, end="\n\n")  # 输出选择的设备
 
 # 创建Trans_mod模块中的Train_test对象，并传入相关参数
-tmod = Trans_mod.Train_test(dataset='dc', device=device, skip_train=False, save=True)
+tmod = Trans_mod.Train_test(dataset='apex', device=device, skip_train=False, save=True)
 tmod.run(smry=False)  # 运行训练和测试方法
