@@ -107,6 +107,26 @@ class Train_test:  # 定义Train_test类
             self.data = datasets.Data(dataset, device)  # 加载数据
             self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
+        elif dataset == 'urban':  # 如果数据集是urban
+            self.P, self.L, self.col = 4, 162, 307  # 初始化参数
+            self.LR, self.EPOCH = 6e-3, 150  # 学习率和训练轮数
+            self.patch, self.dim = 5, 200  # patch大小和维度
+            self.beta, self.gamma = 5e3, 1e-4  # 损失函数的权重
+            self.weight_decay_param = 3e-5  # 权重衰减参数
+            self.order_abd, self.order_endmem = (0, 1, 2), (0, 1, 2, 3)  # 丰度图和端元的顺序
+            self.data = datasets.Data(dataset, device)  # 加载数据
+            self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
+            self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
+        elif dataset == 'jasper':  # 如果数据集是jasper
+            self.P, self.L, self.col = 4, 162, 307  # 初始化参数
+            self.LR, self.EPOCH = 6e-3, 150  # 学习率和训练轮数
+            self.patch, self.dim = 5, 200  # patch大小和维度
+            self.beta, self.gamma = 5e3, 1e-4  # 损失函数的权重
+            self.weight_decay_param = 3e-5  # 权重衰减参数
+            self.order_abd, self.order_endmem = (0, 1, 2), (0, 1, 2, 3)  # 丰度图和端元的顺序
+            self.data = datasets.Data(dataset, device)  # 加载数据
+            self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
+            self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
         else:  # 如果数据集未知
             raise ValueError("Unknown dataset")  # 抛出异常
 
@@ -114,7 +134,9 @@ class Train_test:  # 定义Train_test类
         net = AutoEncoder(P=self.P, L=self.L, size=self.col,
                           patch=self.patch, dim=self.dim).to(self.device)  # 初始化AutoEncoder模型
         if smry:  # 如果需要打印模型摘要
-            summary(net, (1, self.L, self.col, self.col), batch_dim=None)  # 打印模型摘要
+            # summary(net, (1, self.L, self.col, self.col), batch_dim=None)  # 打印模型摘要
+            # print(net)  # 打印模型
+            summary(net, input_size=(self.L, self.col, self.col))  # 打印模型摘要
             return
 
         net.apply(net.weights_init)  # 初始化模型权重
