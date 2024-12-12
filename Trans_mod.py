@@ -117,7 +117,7 @@ class Train_test:  # 定义Train_test类
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
 
             self.LR, self.EPOCH = 6e-3, 150  # 学习率和训练轮数
-            self.patch, self.dim = 5, 200  # patch大小和维度
+            self.patch, self.dim = 1, 200  # patch大小和维度
             self.beta, self.gamma = 5e3, 1e-4  # 损失函数的权重
             self.weight_decay_param = 3e-5  # 权重衰减参数
             self.order_abd, self.order_endmem = (0, 1, 2, 3), (0, 1, 2, 3)  # 丰度图和端元的顺序
@@ -129,7 +129,7 @@ class Train_test:  # 定义Train_test类
 
             self.LR, self.EPOCH = 6e-3, 150  # 学习率和训练轮数
             self.patch, self.dim = 5, 200  # patch大小和维度
-            self.beta, self.gamma = 5e3, 1e-4  # 损失函数的权重
+            self.beta, self.gamma = 1e3, 5e-2  # 损失函数的权重
             self.weight_decay_param = 3e-5  # 权重衰减参数
             self.order_abd, self.order_endmem = (0, 1, 2, 3), (0, 1, 2, 3)  # 丰度图和端元的顺序
         else:  # 如果数据集未知
