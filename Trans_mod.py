@@ -78,55 +78,60 @@ class Train_test:  # 定义Train_test类
         self.save_dir = "trans_mod_" + dataset + "/"  # 保存目录
         os.makedirs(self.save_dir, exist_ok=True)  # 创建保存目录
         if dataset == 'samson':  # 如果数据集是samson
-            self.P, self.L, self.col = 3, 156, 95  # 初始化参数
+            self.data = datasets.Data(dataset, device)  # 加载数据
+            self.P, self.L, self.col = self.data.get_P(), self.data.get_L(), self.data.get_col()  # 初始化参数
+            self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
+            self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
+
             self.LR, self.EPOCH = 6e-3, 200  # 学习率和训练轮数
             self.patch, self.dim = 5, 200  # patch大小和维度
             self.beta, self.gamma = 5e3, 3e-2  # 损失函数的权重
             self.weight_decay_param = 4e-5  # 权重衰减参数
             self.order_abd, self.order_endmem = (0, 1, 2), (0, 1, 2)  # 丰度图和端元的顺序
+        elif dataset == 'apex':  # 如果数据集是apex
             self.data = datasets.Data(dataset, device)  # 加载数据
+            self.P, self.L, self.col = self.data.get_P(), self.data.get_L(), self.data.get_col()  # 初始化参数
             self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
-        elif dataset == 'apex':  # 如果数据集是apex
-            self.P, self.L, self.col = 4, 285, 110  # 初始化参数
+
             self.LR, self.EPOCH = 9e-3, 200  # 学习率和训练轮数
             self.patch, self.dim = 5, 200  # patch大小和维度
             self.beta, self.gamma = 5e3, 5e-2  # 损失函数的权重
             self.weight_decay_param = 4e-5  # 权重衰减参数
             self.order_abd, self.order_endmem = (3, 1, 2, 0), (3, 1, 2, 0)  # 丰度图和端元的顺序
+        elif dataset == 'dc':  # 如果数据集是dc
             self.data = datasets.Data(dataset, device)  # 加载数据
+            self.P, self.L, self.col = self.data.get_P(), self.data.get_L(), self.data.get_col()  # 初始化参数
             self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
-        elif dataset == 'dc':  # 如果数据集是dc
-            self.P, self.L, self.col = 6, 191, 290  # 初始化参数
+
             self.LR, self.EPOCH = 6e-3, 150  # 学习率和训练轮数
             self.patch, self.dim = 10, 400  # patch大小和维度
             self.beta, self.gamma = 5e3, 1e-4  # 损失函数的权重
             self.weight_decay_param = 3e-5  # 权重衰减参数
             self.order_abd, self.order_endmem = (0, 2, 1, 5, 4, 3), (0, 2, 1, 5, 4, 3)  # 丰度图和端元的顺序
-            self.data = datasets.Data(dataset, device)  # 加载数据
-            self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
-            self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
         elif dataset == 'urban':  # 如果数据集是urban
-            self.P, self.L, self.col = 4, 162, 307  # 初始化参数
+            self.data = datasets.Data(dataset, device)  # 加载数据
+            self.P, self.L, self.col = self.data.get_P(), self.data.get_L(), self.data.get_col()  # 初始化参数
+            self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
+            self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
+
             self.LR, self.EPOCH = 6e-3, 150  # 学习率和训练轮数
             self.patch, self.dim = 5, 200  # patch大小和维度
             self.beta, self.gamma = 5e3, 1e-4  # 损失函数的权重
             self.weight_decay_param = 3e-5  # 权重衰减参数
-            self.order_abd, self.order_endmem = (0, 1, 2), (0, 1, 2, 3)  # 丰度图和端元的顺序
-            self.data = datasets.Data(dataset, device)  # 加载数据
-            self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
-            self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
+            self.order_abd, self.order_endmem = (0, 1, 2, 3), (0, 1, 2, 3)  # 丰度图和端元的顺序
         elif dataset == 'jasper':  # 如果数据集是jasper
-            self.P, self.L, self.col = 4, 162, 307  # 初始化参数
+            self.data = datasets.Data(dataset, device)  # 加载数据
+            self.P, self.L, self.col = self.data.get_P(), self.data.get_L(), self.data.get_col()  # 初始化参数
+            self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
+            self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
+
             self.LR, self.EPOCH = 6e-3, 150  # 学习率和训练轮数
             self.patch, self.dim = 5, 200  # patch大小和维度
             self.beta, self.gamma = 5e3, 1e-4  # 损失函数的权重
             self.weight_decay_param = 3e-5  # 权重衰减参数
-            self.order_abd, self.order_endmem = (0, 1, 2), (0, 1, 2, 3)  # 丰度图和端元的顺序
-            self.data = datasets.Data(dataset, device)  # 加载数据
-            self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
-            self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
+            self.order_abd, self.order_endmem = (0, 1, 2, 3), (0, 1, 2, 3)  # 丰度图和端元的顺序
         else:  # 如果数据集未知
             raise ValueError("Unknown dataset")  # 抛出异常
 

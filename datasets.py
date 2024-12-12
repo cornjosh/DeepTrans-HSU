@@ -33,7 +33,7 @@ class Data:
         elif dataset == 'jasper':
             self.P, self.L, self.col = 4, 198, 100  # 设置 jasper 数据集的参数
         elif dataset == 'urban':
-            self.P, self.L, self.col = 4, 162, 306  # 设置 urban 数据集的参数
+            self.P, self.L, self.col = 4, 162, 307  # 设置 urban 数据集的参数
         elif dataset == 'apex':
             self.P, self.L, self.col = 4, 258, 110  # 设置 apex 数据集的参数
         elif dataset == 'dc':
@@ -54,6 +54,15 @@ class Data:
             return self.M  # 返回端元数据
         elif typ == "init_weight":
             return self.M1  # 返回初始权重数据
+        
+    def get_P(self):
+        return self.P  # 返回 P 参数
+    
+    def get_L(self):    
+        return self.L  # 返回 L 参数
+    
+    def get_col(self):
+        return self.col  # 返回 col 参数
 
     def get_loader(self, batch_size=1):
         train_dataset = TrainData(img=self.Y, target=self.A, transform=transforms.Compose([]))  # 创建训练数据集
