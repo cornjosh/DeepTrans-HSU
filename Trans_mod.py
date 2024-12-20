@@ -9,6 +9,7 @@ from torchinfo import summary  # 导入torchsummary模块，用于打印模型�
 
 from vit_pytorch import ViT  # 从vit_pytorch库中导入ViT模块
 from vit_pytorch import SimpleViT  # 从vit_pytorch库中导入SimpleViT模块
+from vit_pytorch.vit_for_small_dataset import ViT as ViT_small  # 从vit_pytorch库中导入ViT_small模块
 
 import datasets  # 导入自定义的datasets模块
 import plots  # 导入自定义的plots模块
@@ -32,11 +33,11 @@ class AutoEncoder(nn.Module):  # 定义AutoEncoder类，继承自nn.Module
             nn.BatchNorm2d((dim*P)//patch**2, momentum=0.5),  # 批量归一化层
         )
 
-        self.vtrans = ViT(image_size=size, patch_size=patch, num_classes=(dim*P), dim=(dim*P), depth=2,
-                          heads=8, mlp_dim=12, channels=(dim*P)//patch**2, dropout=0.1, pool='cls')
+        # self.vtrans = ViT(image_size=size, patch_size=patch, num_classes=(dim*P), dim=(dim*P), depth=2,
+        #                   heads=8, mlp_dim=12, channels=(dim*P)//patch**2, dropout=0.1, pool='cls')
         
-        self.vtrans = SimpleViT(image_size=size, patch_size=patch, num_classes=(dim*P), dim=(dim*P), depth=2,
-                                heads=8, mlp_dim=12, channels=(dim*P)//patch**2)
+        self.vtrans = ViT_small(image_size=size, patch_size=patch, num_classes=(dim*P), dim=(dim*P), depth=2,
+                            heads=8, mlp_dim=12, channels=(dim*P)//patch**2, dropout=0.1, emb_dropout=0.1, pool='cls')
         
         self.upscale = nn.Sequential(  # 定义上采样部分
             nn.Linear(dim, size ** 2),  # 线性层
@@ -123,7 +124,7 @@ class Train_test:  # 定义Train_test类
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
 
             self.LR, self.EPOCH = 6e-3, 150  # 学习率和训练轮数
-            self.patch, self.dim = 1, 200  # patch大小和维度
+            self.patch, self.dim = 5, 200  # patch大小和维度
             self.beta, self.gamma = 5e3, 1e-4  # 损失函数的权重
             self.weight_decay_param = 3e-5  # 权重衰减参数
             self.order_abd, self.order_endmem = (0, 1, 2, 3), (0, 1, 2, 3)  # 丰度图和端元的顺序
