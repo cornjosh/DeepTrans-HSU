@@ -6,6 +6,7 @@ from timm.models.vision_transformer import Mlp  # 从timm库中导入Mlp模块
 from einops import rearrange, repeat  # 从einops库中导入rearrange和repeat函数
 from einops.layers.torch import Rearrange  # 从einops库中导入Rearrange模块
 
+
 # 辅助函数
 def pair(t):
     return t if isinstance(t, tuple) else (t, t)  # 如果t是元组则返回t，否则返回(t, t)
