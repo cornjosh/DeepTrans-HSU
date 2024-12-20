@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser(description='Train and test model')
 parser.add_argument('dataset', type=str, nargs='?', help='Dataset name')
 parser.add_argument('--skip_train', action='store_true', help='Skip training')
 parser.add_argument('--save', action='store_true', help='Save the model')
+parser.add_argument('--smry', action='store_true', help='Save the model')
 args = parser.parse_args()
 
 if args.dataset is None:
@@ -30,4 +31,4 @@ print("Selected device:", device, end="\n\n")  # 输出选择的设备
 
 # 创建Trans_mod模块中的Train_test对象，并传入相关参数
 tmod = Trans_mod.Train_test(dataset=args.dataset, device=device, skip_train=args.skip_train, save=args.save)
-tmod.run(smry=False)  # 运行训练和测试方法
+tmod.run(smry=args.smry)  # 运行训练和测试方法

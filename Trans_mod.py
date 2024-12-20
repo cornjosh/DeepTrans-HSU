@@ -8,11 +8,11 @@ import torch.nn as nn  # 导入PyTorch的神经网络模块
 from torchinfo import summary  # 导入torchsummary模块，用于打印模型摘要
 
 from vit_pytorch import ViT  # 从vit_pytorch库中导入ViT模块
+from vit_pytorch import SimpleViT  # 从vit_pytorch库中导入SimpleViT模块
 
 import datasets  # 导入自定义的datasets模块
 import plots  # 导入自定义的plots模块
 import transformer  # 导入自定义的transformer模块
-import transformer1  # 导入自定义的transformer1模块
 import utils  # 导入自定义的utils模块
 
 
@@ -32,13 +32,11 @@ class AutoEncoder(nn.Module):  # 定义AutoEncoder类，继承自nn.Module
             nn.BatchNorm2d((dim*P)//patch**2, momentum=0.5),  # 批量归一化层
         )
 
-        # self.vtrans = transformer.ViT(image_size=size, patch_size=patch, dim=(dim*P), depth=2,
-        #                               heads=8, mlp_dim=12, pool='cls')  # 定义视觉Transformer部分
-        # self.vtrans1 = transformer1.ViT(image_size=size, patch_size=patch, dim=(dim*P), depth=2, channels=(dim*P)//patch**2,
-        #                               heads=8, mlp_dim=12, pool='cls')
-
         self.vtrans = ViT(image_size=size, patch_size=patch, num_classes=(dim*P), dim=(dim*P), depth=2,
                           heads=8, mlp_dim=12, channels=(dim*P)//patch**2, dropout=0.1, pool='cls')
+        
+        self.vtrans = SimpleViT(image_size=size, patch_size=patch, num_classes=(dim*P), dim=(dim*P), depth=2,
+                                heads=8, mlp_dim=12, channels=(dim*P)//patch**2)
         
         self.upscale = nn.Sequential(  # 定义上采样部分
             nn.Linear(dim, size ** 2),  # 线性层
