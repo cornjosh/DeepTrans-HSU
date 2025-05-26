@@ -13,7 +13,6 @@ from vit_pytorch.vit_for_small_dataset import ViT as ViT_small  # 从vit_pytorch
 
 import datasets  # 导入自定义的datasets模块
 import plots  # 导入自定义的plots模块
-import transformer  # 导入自定义的transformer模块
 import utils  # 导入自定义的utils模块
 from autoencoder import AutoEncoder, NonZeroClipper
 
