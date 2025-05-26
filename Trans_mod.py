@@ -15,64 +15,7 @@ import datasets  # 导入自定义的datasets模块
 import plots  # 导入自定义的plots模块
 import transformer  # 导入自定义的transformer模块
 import utils  # 导入自定义的utils模块
-
-
-class AutoEncoder(nn.Module):  # 定义AutoEncoder类，继承自nn.Module
-    def __init__(self, P, L, size, patch, dim):  # 初始化函数
-        super(AutoEncoder, self).__init__()  # 调用父类的初始化函数
-        self.P, self.L, self.size, self.dim = P, L, size, dim  # 初始化类属性
-        self.encoder = nn.Sequential(  # 定义编码器部分
-            nn.Conv2d(L, 128, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0)),  # 2D卷积层
-            nn.BatchNorm2d(128, momentum=0.9),  # 批量归一化层
-            nn.Dropout(0.25),  # Dropout层
-            nn.LeakyReLU(),  # LeakyReLU激活函数
-            nn.Conv2d(128, 64, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0)),  # 2D卷积层
-            nn.BatchNorm2d(64, momentum=0.9),  # 批量归一化层
-            nn.LeakyReLU(),  # LeakyReLU激活函数
-            nn.Conv2d(64, (dim*P)//patch**2, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0)),  # 2D卷积层
-            nn.BatchNorm2d((dim*P)//patch**2, momentum=0.5),  # 批量归一化层
-        )
-
-        # self.vtrans = ViT(image_size=size, patch_size=patch, num_classes=(dim*P), dim=(dim*P), depth=2,
-        #                   heads=8, mlp_dim=12, channels=(dim*P)//patch**2, dropout=0.1, pool='cls')
-        
-        self.vtrans = ViT_small(image_size=size, patch_size=patch, num_classes=(dim*P), dim=(dim*P), depth=2,
-                            heads=8, mlp_dim=12, channels=(dim*P)//patch**2, dropout=0.1, emb_dropout=0.1, pool='cls')
-        
-        self.upscale = nn.Sequential(  # 定义上采样部分
-            nn.Linear(dim, size ** 2),  # 线性层
-        )
-        
-        self.smooth = nn.Sequential(  # 定义平滑部分
-            nn.Conv2d(P, P, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),  # 2D卷积层
-            nn.Softmax(dim=1),  # Softmax激活函数
-        )
-
-        self.decoder = nn.Sequential(  # 定义解码器部分
-            nn.Conv2d(P, L, kernel_size=(1, 1), stride=(1, 1), bias=False),  # 2D卷积层
-            nn.ReLU(),  # ReLU激活函数
-        )
-
-    @staticmethod
-    def weights_init(m):  # 定义权重初始化函数
-        if type(m) == nn.Conv2d:  # 如果层是2D��积层
-            nn.init.kaiming_normal_(m.weight.data)  # 使用Kaiming正态分布初始化权重
-
-    def forward(self, x):  # 定义前向传播函数
-        abu_est = self.encoder(x)  # ��码输入
-        cls_emb = self.vtrans(abu_est)  # 通过视觉Transformer处理
-        cls_emb = cls_emb.view(1, self.P, -1)  # 调整形状
-        abu_est = self.upscale(cls_emb).view(1, self.P, self.size, self.size)  # 上采样并调整形状
-        abu_est = self.smooth(abu_est)  # 平滑处理
-        re_result = self.decoder(abu_est)  # 解码
-        return abu_est, re_result  # 返回估计的丰度图和重建结果
-
-
-class NonZeroClipper(object):  # 定义NonZeroClipper类
-    def __call__(self, module):  # 定义调用函数
-        if hasattr(module, 'weight'):  # 如果模块有权重属性
-            w = module.weight.data  # 获取权重数据
-            w.clamp_(1e-6, 1)  # 将权重限制在1e-6到1之间
+from autoencoder import AutoEncoder, NonZeroClipper
 
 
 class Train_test:  # 定义Train_test类
