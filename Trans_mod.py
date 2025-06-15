@@ -32,11 +32,11 @@ class Train_test:  # 定义Train_test类
             self.P, self.L, self.col = self.data.get_P(), self.data.get_L(), self.data.get_col()  # 初始化参数
             self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
-            self.LR, self.EPOCH = 6e-3, 500  # 学习率和训练轮数
-            self.stage1_epochs = 250
-            self.stage2_epochs = 250
+            self.LR, self.EPOCH = 5e-3, 200  # 学习率和训练轮数（降低学习率，减少总epoch）
+            self.stage1_epochs = 120  # 第一阶段epoch
+            self.stage2_epochs = 80   # 第二阶段epoch
             self.patch, self.dim = 5, 200  # patch大小和维度
-            self.beta, self.gamma = 5e3, 3e-2  # 损失函数的权重
+            self.beta, self.gamma = 3e3, 5e-2  # 损失函数的权重（MSE略降，SAD略升）
             self.weight_decay_param = 4e-5  # 权重衰减参数
             self.order_abd, self.order_endmem = (0, 1, 2), (0, 1, 2)  # 丰度图和端元的顺序
         elif dataset == 'apex':  # 如果数据集是apex
