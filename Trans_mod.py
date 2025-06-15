@@ -33,6 +33,8 @@ class Train_test:  # 定义Train_test类
             self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
             self.LR, self.EPOCH = 6e-3, 500  # 学习率和训练轮数
+            self.stage1_epochs = 250
+            self.stage2_epochs = 250
             self.patch, self.dim = 5, 200  # patch大小和维度
             self.beta, self.gamma = 5e3, 3e-2  # 损失函数的权重
             self.weight_decay_param = 4e-5  # 权重衰减参数
@@ -44,6 +46,8 @@ class Train_test:  # 定义Train_test类
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
 
             self.LR, self.EPOCH = 9e-3, 200  # 学习率和训练轮数
+            self.stage1_epochs = 100
+            self.stage2_epochs = 100
             self.patch, self.dim = 5, 200  # patch大小和维度
             self.beta, self.gamma = 5e3, 5e-2  # 损失函数的权重
             self.weight_decay_param = 4e-5  # 权重衰减参数
@@ -55,6 +59,8 @@ class Train_test:  # 定义Train_test类
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
 
             self.LR, self.EPOCH = 6e-3, 150  # 学习率和训练轮数
+            self.stage1_epochs = 75
+            self.stage2_epochs = 75
             self.patch, self.dim = 10, 400  # patch大小和维度
             self.beta, self.gamma = 5e3, 1e-4  # 损失函数的权重
             self.weight_decay_param = 3e-5  # 权重衰减参数
@@ -66,6 +72,8 @@ class Train_test:  # 定义Train_test类
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
 
             self.LR, self.EPOCH = 6e-3, 150  # 学习率和训练轮数
+            self.stage1_epochs = 75
+            self.stage2_epochs = 75
             self.patch, self.dim = 5, 200  # patch大小和维度
             self.beta, self.gamma = 5e3, 1e-4  # 损失函数的权重
             self.weight_decay_param = 3e-5  # 权重衰减参数
@@ -77,6 +85,8 @@ class Train_test:  # 定义Train_test类
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
 
             self.LR, self.EPOCH = 6e-3, 150  # 学习率和训练轮数
+            self.stage1_epochs = 75
+            self.stage2_epochs = 75
             self.patch, self.dim = 5, 200  # patch大小和维度
             self.beta, self.gamma = 1e3, 5e-2  # 损失函数的权重
             self.weight_decay_param = 3e-5  # 权重衰减参数
@@ -110,8 +120,8 @@ class Train_test:  # 定义Train_test类
             time_start = time.time()
             net.train()
             epo_vs_los = []
-            stage1_epochs = self.EPOCH // 2
-            stage2_epochs = self.EPOCH - stage1_epochs
+            # stage1_epochs = self.EPOCH // 2 # 使用 __init__ 中定义的
+            # stage2_epochs = self.EPOCH - stage1_epochs # 使用 __init__ 中定义的
 
             # --------- 阶段1：增大SAD权重，训练全部参数 ---------
             print("阶段1：增大SAD权重，训练全部参数")
@@ -120,7 +130,7 @@ class Train_test:  # 定义Train_test类
             mse_weight1 = self.beta * 0.1  # 降低MSE权重
             optimizer1 = torch.optim.Adam(net.parameters(), lr=self.LR, weight_decay=self.weight_decay_param)
             scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer1, step_size=15, gamma=0.8)
-            for epoch in range(stage1_epochs):
+            for epoch in range(self.stage1_epochs):
                 for i, (x, _) in enumerate(self.loader):
                     x = x.transpose(1, 0).view(1, -1, self.col, self.col)
                     abu_est, re_result = net(x)
@@ -174,7 +184,7 @@ class Train_test:  # 定义Train_test类
             params2 = filter(lambda p: p.requires_grad, net.parameters())
             optimizer2 = torch.optim.Adam(params2, lr=self.LR * 0.5, weight_decay=self.weight_decay_param)
             scheduler2 = torch.optim.lr_scheduler.StepLR(optimizer2, step_size=15, gamma=0.8)
-            for epoch in range(stage2_epochs):
+            for epoch in range(self.stage2_epochs):
                 for i, (x, _) in enumerate(self.loader):
                     x = x.transpose(1, 0).view(1, -1, self.col, self.col)
                     abu_est, re_result = net(x)
