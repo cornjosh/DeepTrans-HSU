@@ -2,6 +2,7 @@ import os  # 导入操作系统模块
 import pickle  # 导入pickle模块，用于序列化和反序列化Python对象
 import time  # 导入时间模块
 
+import numpy as np  # 用于数组变换
 import scipy.io as sio  # 导入scipy.io模块，用于处理MAT文件
 import torch  # 导入PyTorch库
 import torch.nn as nn  # 导入PyTorch的神经网络模块
@@ -32,7 +33,7 @@ class Train_test:  # 定义Train_test类
             self.loader = self.data.get_loader(batch_size=self.col ** 2)  # 获取数据加载器
             self.init_weight = self.data.get("init_weight").unsqueeze(2).unsqueeze(3).float()  # 初始化权重
 
-            self.LR, self.EPOCH = 6e-3, 200  # 学习率和训练轮数
+            self.LR, self.EPOCH = 6e-3, 500  # 学习率和训练轮数
             self.patch, self.dim = 5, 200  # patch大小和维度
             self.beta, self.gamma = 5e3, 3e-2  # 损失函数的权重
             self.weight_decay_param = 4e-5  # 权重衰减参数
@@ -133,8 +134,31 @@ class Train_test:  # 定义Train_test类
                     nn.utils.clip_grad_norm_(net.parameters(), max_norm=10, norm_type=1)
                     optimizer1.step()
                     net.decoder.apply(apply_clamp_inst1)
+                    # 计算RMSE（只取当前batch，和测试阶段一致，需转为numpy）
+                    with torch.no_grad():
+                        abu_est_np = abu_est.detach().cpu().numpy()  # (1, P, col, col)
+                        if hasattr(self.data, 'get') and callable(self.data.get):
+                            target_np = torch.reshape(self.data.get("abd_map"), (self.col, self.col, self.P)).cpu().numpy()
+                        else:
+                            target_np = None
+                        # 转换 abu_est 为 (col, col, P)
+                        if abu_est_np.shape[0] == 1:
+                            abu_est_show = np.moveaxis(abu_est_np.squeeze(0), 0, -1)
+                        else:
+                            abu_est_show = np.moveaxis(abu_est_np, 0, -1)
+                        if target_np is not None and abu_est_show.shape == target_np.shape:
+                            _, rmse_val = utils.compute_rmse(target_np, abu_est_show)
+                        else:
+                            rmse_val = -1
                     if epoch % 10 == 0 and i == 0:
-                        print(f'[Stage1] Epoch: {epoch} | loss: {total_loss.item():.4f} | re: {loss_re.item():.4f} | sad: {loss_sad.item():.4f}')
+                        # 端元SAD统计
+                        with torch.no_grad():
+                            est_endmem = net.decoder[0].weight.detach().cpu().numpy().reshape(self.L, self.P)
+                            true_endmem = self.data.get("end_mem").cpu().numpy()
+                            est_endmem = est_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else est_endmem
+                            true_endmem = true_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else true_endmem
+                            _, mean_sad = utils.compute_sad(est_endmem, true_endmem)
+                        print(f'[Stage1] Epoch: {epoch} | loss: {total_loss.item():.4f} | loss re: {loss_re.item():.4f} | loss SAD: {loss_sad.item():.4f} | true rmse: {rmse_val:.4f} | true SAD: {mean_sad:.4f}')
                     epo_vs_los.append(float(total_loss.item()))
                 scheduler1.step()
 
@@ -163,8 +187,32 @@ class Train_test:  # 定义Train_test类
                     total_loss.backward()
                     nn.utils.clip_grad_norm_(params2, max_norm=10, norm_type=1)
                     optimizer2.step()
+                    # 计算RMSE（只取当前batch，和测试阶段一致，需转为numpy）
+                    with torch.no_grad():
+                        abu_est_np = abu_est.detach().cpu().numpy()
+                        x_np = x.detach().cpu().numpy()
+                        if hasattr(self.data, 'get') and callable(self.data.get):
+                            target_np = torch.reshape(self.data.get("abd_map"), (self.col, self.col, self.P)).cpu().numpy()
+                        else:
+                            target_np = None
+                        # 转换 abu_est 为 (col, col, P)
+                        if abu_est_np.shape[0] == 1:
+                            abu_est_show = np.moveaxis(abu_est_np.squeeze(0), 0, -1)
+                        else:
+                            abu_est_show = np.moveaxis(abu_est_np, 0, -1)
+                        if target_np is not None and abu_est_show.shape == target_np.shape:
+                            _, rmse_val = utils.compute_rmse(target_np, abu_est_show)
+                        else:
+                            rmse_val = -1
                     if epoch % 10 == 0 and i == 0:
-                        print(f'[Stage2] Epoch: {epoch} | loss: {total_loss.item():.4f} | re: {loss_re.item():.4f} | sad: {loss_sad.item():.4f}')
+                        # 端元SAD统计
+                        with torch.no_grad():
+                            est_endmem = net.decoder[0].weight.detach().cpu().numpy().reshape(self.L, self.P)
+                            true_endmem = self.data.get("end_mem").cpu().numpy()
+                            est_endmem = est_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else est_endmem
+                            true_endmem = true_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else true_endmem
+                            _, mean_sad = utils.compute_sad(est_endmem, true_endmem)
+                        print(f'[Stage2] Epoch: {epoch} | loss: {total_loss.item():.4f} | loss re: {loss_re.item():.4f} | loss SAD: {loss_sad.item():.4f} | true rmse: {rmse_val:.4f} | true SAD: {mean_sad:.4f}')
                     epo_vs_los.append(float(total_loss.item()))
                 scheduler2.step()
 
