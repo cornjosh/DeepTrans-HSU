@@ -35,7 +35,7 @@ class Data:
         elif dataset == 'urban':
             self.P, self.L, self.col = 4, 162, 307  # 设置 urban 数据集的参数
         elif dataset == 'apex':
-            self.P, self.L, self.col = 4, 258, 110  # 设置 apex 数据集的参数
+            self.P, self.L, self.col = 4, 285, 110  # 设置 apex 数据集的参数
         elif dataset == 'dc':
             self.P, self.L, self.col = 6, 191, 290  # 设置 dc 数据集的参数
 
