@@ -47,7 +47,7 @@ class Train_test:  # 定义Train_test类
 
             self.LR, self.EPOCH = 9e-3, 200  # 学习率和训练轮数
             self.stage1_epochs = 100
-            self.stage2_epochs = 100
+            self.stage2_epochs = 90
             self.patch, self.dim = 5, 200  # patch大小和维度
             self.beta, self.gamma = 5e3, 5e-2  # 损失函数的权重
             self.weight_decay_param = 4e-5  # 权重衰减参数
@@ -164,8 +164,8 @@ class Train_test:  # 定义Train_test类
                         with torch.no_grad():
                             est_endmem = net.decoder[0].weight.detach().cpu().numpy().reshape(self.L, self.P)
                             true_endmem = self.data.get("end_mem").cpu().numpy()
-                            est_endmem = est_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else est_endmem
-                            true_endmem = true_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else true_endmem
+                            # est_endmem = est_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else est_endmem
+                            # true_endmem = true_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else true_endmem
                             _, mean_sad = utils.compute_sad(est_endmem, true_endmem)
                         print(f'[Stage1] Epoch: {epoch} | loss: {total_loss.item():.4f} | loss re: {loss_re.item():.4f} | loss SAD: {loss_sad.item():.4f} | true rmse: {rmse_val:.4f} | true SAD: {mean_sad:.4f}')
                     epo_vs_los.append(float(total_loss.item()))
@@ -218,8 +218,8 @@ class Train_test:  # 定义Train_test类
                         with torch.no_grad():
                             est_endmem = net.decoder[0].weight.detach().cpu().numpy().reshape(self.L, self.P)
                             true_endmem = self.data.get("end_mem").cpu().numpy()
-                            est_endmem = est_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else est_endmem
-                            true_endmem = true_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else true_endmem
+                            # est_endmem = est_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else est_endmem
+                            # true_endmem = true_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else true_endmem
                             _, mean_sad = utils.compute_sad(est_endmem, true_endmem)
                         print(f'[Stage2] Epoch: {epoch} | loss: {total_loss.item():.4f} | loss re: {loss_re.item():.4f} | loss SAD: {loss_sad.item():.4f} | true rmse: {rmse_val:.4f} | true SAD: {mean_sad:.4f}')
                     epo_vs_los.append(float(total_loss.item()))
@@ -241,16 +241,13 @@ class Train_test:  # 定义Train_test类
 
         net.eval()  # 设置模型为评估模式
         x = self.data.get("hs_img").transpose(1, 0).view(1, -1, self.col, self.col)  # 获取高光谱图像并调整形状
-        abu_est, re_result = net(x)  # 前向传播
+        abu_est, re_result = net(x)
         abu_est = abu_est / (torch.sum(abu_est, dim=1))  # 归一化丰度图
         abu_est = abu_est.squeeze(0).permute(1, 2, 0).detach().cpu().numpy()  # 调整形状并转换为numpy数组
         target = torch.reshape(self.data.get("abd_map"), (self.col, self.col, self.P)).cpu().numpy()  # 获取目标丰度图
         true_endmem = self.data.get("end_mem").numpy()  # 获取真实端元
         est_endmem = net.state_dict()["decoder.0.weight"].cpu().numpy()  # 获取估计端元
         est_endmem = est_endmem.reshape((self.L, self.P))  # 调整形状
-
-        abu_est = abu_est[:, :, self.order_abd]  # 调整丰度图顺序
-        est_endmem = est_endmem[:, self.order_endmem]  # 调整端元顺序
 
         sio.savemat(self.save_dir + f"{self.dataset}_abd_map.mat", {"A_est": abu_est})  # 保存估计丰度图
         sio.savemat(self.save_dir + f"{self.dataset}_endmem.mat", {"E_est": est_endmem})  # 保存估计端元
