@@ -49,9 +49,63 @@ class AutoEncoder(nn.Module):
         re_result = self.decoder(abu_est)
         return abu_est, re_result
 
+    # 冻结/解冻 encoder
+    def freeze_encoder(self):
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+    def unfreeze_encoder(self):
+        for param in self.encoder.parameters():
+            param.requires_grad = True
+
+    # 冻结/解冻 ViT
+    def freeze_vit(self):
+        for param in self.vtrans.parameters():
+            param.requires_grad = False
+    def unfreeze_vit(self):
+        for param in self.vtrans.parameters():
+            param.requires_grad = True
+
+    # 冻结/解冻 upscale
+    def freeze_upscale(self):
+        for param in self.upscale.parameters():
+            param.requires_grad = False
+    def unfreeze_upscale(self):
+        for param in self.upscale.parameters():
+            param.requires_grad = True
+
+    # 冻结/解冻 smooth
+    def freeze_smooth(self):
+        for param in self.smooth.parameters():
+            param.requires_grad = False
+    def unfreeze_smooth(self):
+        for param in self.smooth.parameters():
+            param.requires_grad = True
+
+    # 冻结/解冻 decoder
+    def freeze_decoder(self):
+        for param in self.decoder.parameters():
+            param.requires_grad = False
+    def unfreeze_decoder(self):
+        for param in self.decoder.parameters():
+            param.requires_grad = True
+
+    # 一键冻结/解冻所有参数
+    def freeze_all(self):
+        self.freeze_encoder()
+        self.freeze_vit()
+        self.freeze_upscale()
+        self.freeze_smooth()
+        self.freeze_decoder()
+    def unfreeze_all(self):
+        self.unfreeze_encoder()
+        self.unfreeze_vit()
+        self.unfreeze_upscale()
+        self.unfreeze_smooth()
+        self.unfreeze_decoder()
+
 
 class NonZeroClipper(object):
     def __call__(self, module):
         if hasattr(module, 'weight'):
             w = module.weight.data
-            w.clamp_(1e-6, 1) 
+            w.clamp_(1e-6, 1)

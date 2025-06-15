@@ -105,45 +105,76 @@ class Train_test:  # 定义Train_test类
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=15, gamma=0.8)  # 定义学习率调度器
         apply_clamp_inst1 = NonZeroClipper()  # 定义NonZeroClipper实例
         
-        if not self.skip_train:  # 如果不跳过训练
-            time_start = time.time()  # 记录开始时间
-            net.train()  # 设置模型为训练模式
-            epo_vs_los = []  # 初始化损失记录列表
-            for epoch in range(self.EPOCH):  # 训练循环
-                for i, (x, _) in enumerate(self.loader):  # 遍历数据加载器
+        # ==================== 两步训练 ====================
+        if not self.skip_train:
+            time_start = time.time()
+            net.train()
+            epo_vs_los = []
+            stage1_epochs = self.EPOCH // 2
+            stage2_epochs = self.EPOCH - stage1_epochs
 
-                    x = x.transpose(1, 0).view(1, -1, self.col, self.col)  # 调整输入形状
-                    abu_est, re_result = net(x)  # 前向传播
+            # --------- 阶段1：增大SAD权重，训练全部参数 ---------
+            print("阶段1：增大SAD权重，训练全部参数")
+            net.unfreeze_all()
+            sad_weight1 = self.gamma * 10  # 增大SAD权重
+            mse_weight1 = self.beta * 0.1  # 降低MSE权重
+            optimizer1 = torch.optim.Adam(net.parameters(), lr=self.LR, weight_decay=self.weight_decay_param)
+            scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer1, step_size=15, gamma=0.8)
+            for epoch in range(stage1_epochs):
+                for i, (x, _) in enumerate(self.loader):
+                    x = x.transpose(1, 0).view(1, -1, self.col, self.col)
+                    abu_est, re_result = net(x)
+                    loss_re = mse_weight1 * loss_func(re_result, x)
+                    loss_sad = sad_weight1 * torch.sum(loss_func2(re_result.view(1, self.L, -1).transpose(1, 2),
+                                                                x.view(1, self.L, -1).transpose(1, 2))).float()
+                    total_loss = loss_re + loss_sad
+                    optimizer1.zero_grad()
+                    total_loss.backward()
+                    nn.utils.clip_grad_norm_(net.parameters(), max_norm=10, norm_type=1)
+                    optimizer1.step()
+                    net.decoder.apply(apply_clamp_inst1)
+                    if epoch % 10 == 0 and i == 0:
+                        print(f'[Stage1] Epoch: {epoch} | loss: {total_loss.item():.4f} | re: {loss_re.item():.4f} | sad: {loss_sad.item():.4f}')
+                    epo_vs_los.append(float(total_loss.item()))
+                scheduler1.step()
 
-                    loss_re = self.beta * loss_func(re_result, x)  # 计算重建损失
-                    loss_sad = loss_func2(re_result.view(1, self.L, -1).transpose(1, 2),
-                                          x.view(1, self.L, -1).transpose(1, 2))  # 计算光谱角度距离损失
-                    loss_sad = self.gamma * torch.sum(loss_sad).float()  # 加权光谱角度距离损失
+            # --------- 阶段2：冻结decoder，增大MSE权重，训练丰度相关参数 ---------
+            print("阶段2：冻结decoder，仅训练丰度相关参数，增大MSE权重")
+            net.freeze_decoder()
+            net.unfreeze_encoder()
+            net.unfreeze_vit()
+            net.unfreeze_upscale()
+            net.unfreeze_smooth()
+            sad_weight2 = self.gamma * 0.1  # 降低SAD权重
+            mse_weight2 = self.beta * 10   # 增大MSE权重
+            # 只优化未冻结参数
+            params2 = filter(lambda p: p.requires_grad, net.parameters())
+            optimizer2 = torch.optim.Adam(params2, lr=self.LR * 0.5, weight_decay=self.weight_decay_param)
+            scheduler2 = torch.optim.lr_scheduler.StepLR(optimizer2, step_size=15, gamma=0.8)
+            for epoch in range(stage2_epochs):
+                for i, (x, _) in enumerate(self.loader):
+                    x = x.transpose(1, 0).view(1, -1, self.col, self.col)
+                    abu_est, re_result = net(x)
+                    loss_re = mse_weight2 * loss_func(re_result, x)
+                    loss_sad = sad_weight2 * torch.sum(loss_func2(re_result.view(1, self.L, -1).transpose(1, 2),
+                                                                x.view(1, self.L, -1).transpose(1, 2))).float()
+                    total_loss = loss_re + loss_sad
+                    optimizer2.zero_grad()
+                    total_loss.backward()
+                    nn.utils.clip_grad_norm_(params2, max_norm=10, norm_type=1)
+                    optimizer2.step()
+                    if epoch % 10 == 0 and i == 0:
+                        print(f'[Stage2] Epoch: {epoch} | loss: {total_loss.item():.4f} | re: {loss_re.item():.4f} | sad: {loss_sad.item():.4f}')
+                    epo_vs_los.append(float(total_loss.item()))
+                scheduler2.step()
 
-                    total_loss = loss_re + loss_sad  # 总损失
-
-                    optimizer.zero_grad()  # 清空梯度
-                    total_loss.backward()  # 反向传播
-                    nn.utils.clip_grad_norm_(net.parameters(), max_norm=10, norm_type=1)  # 梯度裁剪
-                    optimizer.step()  # 优化器更新
-
-                    net.decoder.apply(apply_clamp_inst1)  # 应用NonZeroClipper
-                    
-                    if epoch % 10 == 0:  # 每10个epoch打印一次损失
-                        print('Epoch:', epoch, '| train loss: %.4f' % total_loss.data,
-                              '| re loss: %.4f' % loss_re.data,
-                              '| sad loss: %.4f' % loss_sad.data)
-                    epo_vs_los.append(float(total_loss.data))  # 记录损失
-
-                scheduler.step()  # 更新学习率
-            time_end = time.time()  # 记录结束时间
-            
-            if self.save:  # 如果需要保存模型
-                with open(self.save_dir + 'weights_new.pickle', 'wb') as handle:  # 打开文件
-                    pickle.dump(net.state_dict(), handle)  # 保存模型状态字典
-                sio.savemat(self.save_dir + f"{self.dataset}_losses.mat", {"losses": epo_vs_los})  # 保存损失记录
-            
-            print('Total computational cost:', time_end - time_start)  # 打印总计算时间
+            time_end = time.time()
+            if self.save:
+                with open(self.save_dir + 'weights_new.pickle', 'wb') as handle:
+                    pickle.dump(net.state_dict(), handle)
+                sio.savemat(self.save_dir + f"{self.dataset}_losses.mat", {"losses": epo_vs_los})
+            print('Total computational cost:', time_end - time_start)
+        # ...existing code...
 
         else:  # 如果跳过训练
             with open(self.save_dir + 'weights.pickle', 'rb') as handle:  # 打开文件
