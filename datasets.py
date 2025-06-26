@@ -33,15 +33,26 @@ class Data:
         elif dataset == 'jasper':
             self.P, self.L, self.col = 4, 198, 100  # 设置 jasper 数据集的参数
         elif dataset == 'urban':
-            self.P, self.L, self.col = 4, 162, 307  # 设置 urban 数据集的参数
+            self.P, self.L, self.col = 4, 162, 305  # urban 裁剪后 col=305
         elif dataset == 'apex':
             self.P, self.L, self.col = 4, 285, 110  # 设置 apex 数据集的参数
         elif dataset == 'dc':
             self.P, self.L, self.col = 6, 191, 290  # 设置 dc 数据集的参数
 
         data = sio.loadmat(data_path)  # 加载 .mat 文件数据
-        self.Y = torch.from_numpy(data['Y'].T).to(device)  # 将 Y 数据转换为 PyTorch 张量并转置
-        self.A = torch.from_numpy(data['A'].T).to(device)  # 将 A 数据转换为 PyTorch 张量并转置
+        if dataset == 'urban':
+            # urban: Y [94249, 162], A [94249, 4]，先reshape再裁剪
+            Y = data['Y'].T  # [94249, 162]
+            A = data['A'].T  # [94249, 4]
+            Y = Y.reshape(307, 307, 162)[1:-1, 1:-1, :]  # [305, 305, 162]
+            A = A.reshape(307, 307, 4)[1:-1, 1:-1, :]    # [305, 305, 4]
+            Y = Y.reshape(-1, 162)  # [93025, 162]
+            A = A.reshape(-1, 4)    # [93025, 4]
+            self.Y = torch.from_numpy(Y).to(device)
+            self.A = torch.from_numpy(A).to(device)
+        else:
+            self.Y = torch.from_numpy(data['Y'].T).to(device)
+            self.A = torch.from_numpy(data['A'].T).to(device)
         self.M = torch.from_numpy(data['M'])  # 将 M 数据转换为 PyTorch 张量
         self.M1 = torch.from_numpy(data['M1'])  # 将 M1 数据转换为 PyTorch 张量
 
