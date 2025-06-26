@@ -177,8 +177,6 @@ class Train_test:  # 定义Train_test类
                         with torch.no_grad():
                             est_endmem = net.decoder[0].weight.detach().cpu().numpy().reshape(self.L, self.P)
                             true_endmem = self.data.get("end_mem").cpu().numpy()
-                            # est_endmem = est_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else est_endmem
-                            # true_endmem = true_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else true_endmem
                             _, mean_sad = utils.compute_sad(est_endmem, true_endmem)
                         print(f'[Stage1] Epoch: {epoch} | loss: {total_loss.item():.4f} | loss re: {loss_re.item():.4f} | loss SAD: {loss_sad.item():.4f} | true rmse: {rmse_val:.4f} | true SAD: {mean_sad:.4f}')
                     epo_vs_los.append(float(total_loss.item()))
@@ -231,8 +229,6 @@ class Train_test:  # 定义Train_test类
                         with torch.no_grad():
                             est_endmem = net.decoder[0].weight.detach().cpu().numpy().reshape(self.L, self.P)
                             true_endmem = self.data.get("end_mem").cpu().numpy()
-                            # est_endmem = est_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else est_endmem
-                            # true_endmem = true_endmem[:, self.order_endmem] if hasattr(self, 'order_endmem') else true_endmem
                             _, mean_sad = utils.compute_sad(est_endmem, true_endmem)
                         print(f'[Stage2] Epoch: {epoch} | loss: {total_loss.item():.4f} | loss re: {loss_re.item():.4f} | loss SAD: {loss_sad.item():.4f} | true rmse: {rmse_val:.4f} | true SAD: {mean_sad:.4f}')
                     epo_vs_los.append(float(total_loss.item()))

@@ -96,3 +96,39 @@ class SID(nn.Module):
                         normalize_tar * torch.log(normalize_tar / normalize_inp))  # 计算SID损失
 
         return sid  # 返回SID损失
+
+# 辅助函数：自动对齐并计算丰度RMSE
+def get_abundance_rmse(target, pred):
+    """
+    target: [H, W, C] 或 [N, C]，真实丰度
+    pred:   [H, W, C] 或 [N, C]，预测丰度
+    自动reshape并调用compute_rmse，返回(mean_rmse, class_rmse)
+    """
+    if target.ndim == 2 and pred.ndim == 2:
+        # [N, C] -> [H, W, C] 假设N=H*W
+        N, C = target.shape
+        H = W = int(np.sqrt(N)) if int(np.sqrt(N))**2 == N else N
+        target = target.reshape(H, -1, C)
+        pred = pred.reshape(H, -1, C)
+    elif target.ndim == 3 and pred.ndim == 3:
+        pass
+    else:
+        raise ValueError('丰度输入shape不匹配')
+    class_rmse, mean_rmse = compute_rmse(target, pred)
+    return mean_rmse, class_rmse
+
+# 辅助函数：自动对齐并计算端元SAD
+def get_endmember_sad(est, true):
+    """
+    est: [B, K] 或 [K, B]，预测端元
+    true: [B, K] 或 [K, B]，真实端元
+    自动转为 [B, K] 并调用compute_sad，返回(mean_sad, sad_err)
+    """
+    if est.shape != true.shape:
+        raise ValueError('端元shape不一致')
+    # 保证为 [B, K]
+    if est.shape[0] < est.shape[1]:
+        est = est.T
+        true = true.T
+    sad_err, mean_sad = compute_sad(est, true)
+    return mean_sad, sad_err
