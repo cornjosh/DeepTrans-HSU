@@ -38,6 +38,8 @@ class Data:
             self.P, self.L, self.col = 4, 285, 110  # 设置 apex 数据集的参数
         elif dataset == 'dc':
             self.P, self.L, self.col = 6, 191, 290  # 设置 dc 数据集的参数
+        elif dataset == 'moffett':
+            self.P, self.L, self.col = 3, 184, 50  # 设置 moffett 数据集的参数
 
         data = sio.loadmat(data_path)  # 加载 .mat 文件数据
         if dataset == 'urban':
