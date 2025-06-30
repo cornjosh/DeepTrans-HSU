@@ -159,7 +159,10 @@ class Train_test:  # 定义Train_test类
                     if epoch % 10 == 0 and i == 0:
                         # 计算RMSE（只取当前batch，和测试阶段一致，需转为numpy）
                         with torch.no_grad():
-                            abu_est_np = abu_est.detach().cpu().numpy()  # (1, P, col, col)
+                            # 将2P通道的丰度图分割并平均，用于评估
+                            abu_spa, abu_spr = torch.chunk(abu_est, 2, dim=1)
+                            abu_for_eval = (abu_spa + abu_spr) / 2.0
+                            abu_est_np = abu_for_eval.detach().cpu().numpy()  # (1, P, col, col)
                             if hasattr(self.data, 'get') and callable(self.data.get):
                                 target_np = torch.reshape(self.data.get("abd_map"), (self.col, self.col, self.P)).cpu().numpy()
                             else:
@@ -210,7 +213,10 @@ class Train_test:  # 定义Train_test类
                     if epoch % 10 == 0 and i == 0:
                         # 计算RMSE（只取当前batch，和测试阶段一致，需转为numpy）
                         with torch.no_grad():
-                            abu_est_np = abu_est.detach().cpu().numpy()
+                            # 将2P通道的丰度图分割并平均，用于评估
+                            abu_spa, abu_spr = torch.chunk(abu_est, 2, dim=1)
+                            abu_for_eval = (abu_spa + abu_spr) / 2.0
+                            abu_est_np = abu_for_eval.detach().cpu().numpy()
                             x_np = x.detach().cpu().numpy()
                             if hasattr(self.data, 'get') and callable(self.data.get):
                                 target_np = torch.reshape(self.data.get("abd_map"), (self.col, self.col, self.P)).cpu().numpy()
@@ -251,8 +257,13 @@ class Train_test:  # 定义Train_test类
         net.eval()  # 设置模型为评估模式
         x = self.data.get("hs_img").transpose(1, 0).view(1, -1, self.col, self.col)  # 获取高光谱图像并调整形状
         abu_est, re_result = net(x)
-        abu_est = abu_est / (torch.sum(abu_est, dim=1))  # 归一化丰度图
-        abu_est = abu_est.squeeze(0).permute(1, 2, 0).detach().cpu().numpy()  # 调整形状并转换为numpy数组
+        
+        # 将2P通道丰度图分割并平均得到最终P通道丰度图
+        abu_spa, abu_spr = torch.chunk(abu_est, 2, dim=1)
+        abu_final = (abu_spa + abu_spr) / 2.0
+
+        # abu_est = abu_est / (torch.sum(abu_est, dim=1))  # 归一化丰度图 (不再需要，Softmax已处理)
+        abu_est = abu_final.squeeze(0).permute(1, 2, 0).detach().cpu().numpy()  # 调整形状并转换为numpy数组
         target = torch.reshape(self.data.get("abd_map"), (self.col, self.col, self.P)).cpu().numpy()  # 获取目标丰度图
         true_endmem = self.data.get("end_mem").numpy()  # 获取真实端元
         est_endmem = net.state_dict()["decoder.0.weight"].cpu().numpy()  # 获取估计端元
