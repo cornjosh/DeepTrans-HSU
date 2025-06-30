@@ -81,6 +81,29 @@ class AutoEncoder(nn.Module):
         # Return the fused abundance and the reconstruction
         return abu_fused, re_result
 
+    def _set_requires_grad(self, module, requires_grad):
+        for param in module.parameters():
+            param.requires_grad = requires_grad
+
+    def unfreeze_all(self):
+        self._set_requires_grad(self, True)
+
+    def freeze_decoder(self):
+        self._set_requires_grad(self.decoder, False)
+
+    def unfreeze_encoder(self):
+        self._set_requires_grad(self.spa_cnn, True)
+        self._set_requires_grad(self.spr_encoder, True)
+
+    def unfreeze_vit(self):
+        self._set_requires_grad(self.spa_vit, True)
+
+    def unfreeze_upscale(self):
+        self._set_requires_grad(self.spa_upscale, True)
+
+    def unfreeze_smooth(self):
+        self._set_requires_grad(self.smooth, True)
+
 
 class NonZeroClipper(object):
     def __call__(self, module):

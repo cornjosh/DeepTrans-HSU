@@ -119,7 +119,9 @@ class Train_test:  # 定义Train_test类
         net.apply(net.weights_init)  # 初始化模型权重
 
         model_dict = net.state_dict()  # 获取模型状态字典
-        model_dict['decoder.0.weight'] = self.init_weight  # 设置解码器的初始权重
+        # 将P通道的初始权重复制拼接成2P，以匹配双流解码器
+        init_weight_2p = torch.cat((self.init_weight, self.init_weight), dim=1)
+        model_dict['decoder.0.weight'] = init_weight_2p  # 设置解码器的初始权重
         net.load_state_dict(model_dict)  # 加载模型状态字典
 
         loss_func = nn.MSELoss(reduction='mean')  # 定义均方误差损失函数
@@ -178,7 +180,10 @@ class Train_test:  # 定义Train_test类
                                 rmse_val = -1
                         # 端元SAD统计
                         with torch.no_grad():
-                            est_endmem = net.decoder[0].weight.detach().cpu().numpy().reshape(self.L, self.P)
+                            # 从2P通道的解码器权重中分离并平均得到P个端元用于评估
+                            decoder_weight = net.decoder[0].weight.squeeze()
+                            endmem_spa, endmem_spr = torch.chunk(decoder_weight, 2, dim=1)
+                            est_endmem = ((endmem_spa + endmem_spr) / 2.0).cpu().numpy()
                             true_endmem = self.data.get("end_mem").cpu().numpy()
                             _, mean_sad = utils.compute_sad(est_endmem, true_endmem)
                         print(f'[Stage1] Epoch: {epoch} | loss: {total_loss.item():.4f} | loss re: {loss_re.item():.4f} | loss SAD: {loss_sad.item():.4f} | true rmse: {rmse_val:.4f} | true SAD: {mean_sad:.4f}')
@@ -233,7 +238,10 @@ class Train_test:  # 定义Train_test类
                                 rmse_val = -1
                         # 端元SAD统计
                         with torch.no_grad():
-                            est_endmem = net.decoder[0].weight.detach().cpu().numpy().reshape(self.L, self.P)
+                            # 从2P通道的解码器权重中分离并平均得到P个端元用于评估
+                            decoder_weight = net.decoder[0].weight.squeeze()
+                            endmem_spa, endmem_spr = torch.chunk(decoder_weight, 2, dim=1)
+                            est_endmem = ((endmem_spa + endmem_spr) / 2.0).cpu().numpy()
                             true_endmem = self.data.get("end_mem").cpu().numpy()
                             _, mean_sad = utils.compute_sad(est_endmem, true_endmem)
                         print(f'[Stage2] Epoch: {epoch} | loss: {total_loss.item():.4f} | loss re: {loss_re.item():.4f} | loss SAD: {loss_sad.item():.4f} | true rmse: {rmse_val:.4f} | true SAD: {mean_sad:.4f}')
@@ -266,8 +274,11 @@ class Train_test:  # 定义Train_test类
         abu_est = abu_final.squeeze(0).permute(1, 2, 0).detach().cpu().numpy()  # 调整形状并转换为numpy数组
         target = torch.reshape(self.data.get("abd_map"), (self.col, self.col, self.P)).cpu().numpy()  # 获取目标丰度图
         true_endmem = self.data.get("end_mem").numpy()  # 获取真实端元
-        est_endmem = net.state_dict()["decoder.0.weight"].cpu().numpy()  # 获取估计端元
-        est_endmem = est_endmem.reshape((self.L, self.P))  # 调整形状
+        
+        # 从2P通道的解码器权重中分离并平均得到P个端元用于评估
+        decoder_weight = net.decoder[0].weight.squeeze().detach()
+        endmem_spa, endmem_spr = torch.chunk(decoder_weight, 2, dim=1)
+        est_endmem = ((endmem_spa + endmem_spr) / 2.0).cpu().numpy()
 
         sio.savemat(self.save_dir + f"{self.dataset}_abd_map.mat", {"A_est": abu_est})  # 保存估计丰度图
         sio.savemat(self.save_dir + f"{self.dataset}_endmem.mat", {"E_est": est_endmem})  # 保存估计端元
