@@ -148,7 +148,7 @@ class Train_test:  # 定义Train_test类
             for epoch in range(self.stage1_epochs):
                 for i, (x, _) in enumerate(self.loader):
                     x = x.transpose(1, 0).view(1, -1, self.col, self.col)
-                    abu_est, re_result = net(x)
+                    abu_est, re_result, _, _, _, _ = net(x)
                     loss_re = mse_weight1 * loss_func(re_result, x)
                     loss_sad = sad_weight1 * torch.sum(loss_func2(re_result.view(1, self.L, -1).transpose(1, 2),
                                                                 x.view(1, self.L, -1).transpose(1, 2))).float()
@@ -206,7 +206,7 @@ class Train_test:  # 定义Train_test类
             for epoch in range(self.stage2_epochs):
                 for i, (x, _) in enumerate(self.loader):
                     x = x.transpose(1, 0).view(1, -1, self.col, self.col)
-                    abu_est, re_result = net(x)
+                    abu_est, re_result, _, _, _, _ = net(x)
                     loss_re = mse_weight2 * loss_func(re_result, x)
                     loss_sad = sad_weight2 * torch.sum(loss_func2(re_result.view(1, self.L, -1).transpose(1, 2),
                                                                 x.view(1, self.L, -1).transpose(1, 2))).float()
@@ -264,14 +264,16 @@ class Train_test:  # 定义Train_test类
 
         net.eval()  # 设置模型为评估模式
         x = self.data.get("hs_img").transpose(1, 0).view(1, -1, self.col, self.col)  # 获取高光谱图像并调整形状
-        abu_est, re_result = net(x)
+        abu_est, re_result, abu_spa, abu_spr, _, _ = net(x)
         
         # 将2P通道丰度图分割并平均得到最终P通道丰度图
-        abu_spa, abu_spr = torch.chunk(abu_est, 2, dim=1)
-        abu_final = (abu_spa + abu_spr) / 2.0
+        abu_spa_final, abu_spr_final = torch.chunk(abu_est, 2, dim=1)
+        abu_final = (abu_spa_final + abu_spr_final) / 2.0
 
         # abu_est = abu_est / (torch.sum(abu_est, dim=1))  # 归一化丰度图 (不再需要，Softmax已处理)
         abu_est = abu_final.squeeze(0).permute(1, 2, 0).detach().cpu().numpy()  # 调整形状并转换为numpy数组
+        abu_spa = abu_spa.squeeze(0).permute(1, 2, 0).detach().cpu().numpy()
+        abu_spr = abu_spr.squeeze(0).permute(1, 2, 0).detach().cpu().numpy()
         target = torch.reshape(self.data.get("abd_map"), (self.col, self.col, self.P)).cpu().numpy()  # 获取目标丰度图
         true_endmem = self.data.get("end_mem").numpy()  # 获取真实端元
         
@@ -279,6 +281,8 @@ class Train_test:  # 定义Train_test类
         decoder_weight = net.decoder[0].weight.squeeze().detach()
         endmem_spa, endmem_spr = torch.chunk(decoder_weight, 2, dim=1)
         est_endmem = ((endmem_spa + endmem_spr) / 2.0).cpu().numpy()
+        endmem_spa = endmem_spa.cpu().numpy()
+        endmem_spr = endmem_spr.cpu().numpy()
 
         sio.savemat(self.save_dir + f"{self.dataset}_abd_map.mat", {"A_est": abu_est})  # 保存估计丰度图
         sio.savemat(self.save_dir + f"{self.dataset}_endmem.mat", {"E_est": est_endmem})  # 保存估计端元
@@ -307,8 +311,8 @@ class Train_test:  # 定义Train_test类
             file.write(f"SAD: {mean_sad:.4f}, ")  # 写入平均光谱角度距离
             file.write(f"RMSE: {mean_rmse:.4f}\n")  # 写入平均均方根误差
 
-        plots.plot_abundance(target, abu_est, self.P, self.save_dir)  # 绘制丰度图
-        plots.plot_endmembers(true_endmem, est_endmem, self.P, self.save_dir)  # 绘制端元图
+        plots.plot_abundance(target, abu_est, abu_spa, abu_spr, self.P, self.save_dir)  # 绘制丰度图
+        plots.plot_endmembers(true_endmem, est_endmem, endmem_spa, endmem_spr, self.P, self.save_dir)  # 绘制端元图
         
 # =================================================================
 

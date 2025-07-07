@@ -79,7 +79,7 @@ class AutoEncoder(nn.Module):
         re_result = self.decoder(abu_fused)
         
         # Return the fused abundance and the reconstruction
-        return abu_fused, re_result
+        return abu_fused, re_result, abu_spa_s, abu_spr_s, abu_spa, abu_spr
 
     def _set_requires_grad(self, module, requires_grad):
         for param in module.parameters():
