@@ -56,7 +56,11 @@ class Data:
             self.Y = torch.from_numpy(data['Y'].T).to(device)
             self.A = torch.from_numpy(data['A'].T).to(device)
         self.M = torch.from_numpy(data['M'])  # 将 M 数据转换为 PyTorch 张量
-        self.M1 = torch.from_numpy(data['M1'])  # 将 M1 数据转换为 PyTorch 张量
+        # moffett数据集M1顺序调整为(3,2,1)
+        if dataset == 'moffett':
+            self.M1 = torch.from_numpy(data['M1'])[:, [2,0,1]]
+        else:
+            self.M1 = torch.from_numpy(data['M1'])
 
     def get(self, typ):
         if typ == "hs_img":
