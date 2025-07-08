@@ -59,6 +59,8 @@ class Data:
         # moffett数据集M1顺序调整为(3,2,1)
         if dataset == 'moffett':
             self.M1 = torch.from_numpy(data['M1'])[:, [2,0,1]]
+        elif dataset == 'urban':
+            self.M1 = torch.from_numpy(data['M1'])[:, [1, 0, 2, 3]]
         else:
             self.M1 = torch.from_numpy(data['M1'])
 
